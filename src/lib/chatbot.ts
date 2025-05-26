@@ -8,7 +8,6 @@ const apiKey = process.env.DASHSCOPE_API_KEY;
 
 const model = new ChatOpenAI({
     model: "qwen-turbo",
-  
     apiKey: apiKey,
     temperature: 0.7,
     configuration: {
