@@ -442,7 +442,7 @@ export function AIChat() {
                   >
                     <div className="flex items-start gap-3">
                       {!message.isUser && (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-6 h-6 border border-rounded border-white/[0.05] rounded-full bg-transparent from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
                           <Bot className="w-3 h-3 text-white" />
                         </div>
                       )}
@@ -453,7 +453,7 @@ export function AIChat() {
                         </span>
                       </div>
                       {message.isUser && (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-6 h-6 border border-rounded border-white/[0.05] rounded-full bg-transparent from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
                           <User className="w-3 h-3 text-white" />
                         </div>
                       )}
@@ -694,4 +694,5 @@ if (typeof document !== "undefined") {
   const style = document.createElement("style")
   style.innerHTML = rippleKeyframes
   document.head.appendChild(style)
+}
 }
