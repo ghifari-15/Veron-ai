@@ -1,5 +1,8 @@
 import type { Config } from "tailwindcss";
 
+// Import Radix UI colors
+const { blackA, violet, mauve, green, red, amber } = require("@radix-ui/colors");
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -22,6 +25,15 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // Radix UI colors
+        ...blackA,
+        ...violet,
+        ...mauve,
+        ...green,
+        ...red,
+        ...amber,
+        
+        // Existing shadcn/ui colors
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
@@ -70,10 +82,21 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // Tambahan keyframes untuk animasi loading/shimmer
+        "shimmer": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "shimmer": "shimmer 2s infinite",
+        "fade-in": "fade-in 0.5s ease-out",
       },
     },
   },

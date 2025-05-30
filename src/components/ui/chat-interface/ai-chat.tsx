@@ -473,7 +473,7 @@ export function AIChat() {
                   >
                     <div className="max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-xl border bg-white/[0.02] border-white/[0.05] text-white/90 mr-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-6 h-6 rounded-full bg-transparent  border border-rounded border-white/[0.05]  from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
                           <Bot className="w-3 h-3 text-white" />
                         </div>
                         <div className="flex items-center gap-2">

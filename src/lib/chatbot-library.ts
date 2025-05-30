@@ -54,7 +54,55 @@ export const getAvailableModels = () => {
 }
 
 
+// Get model by ID
+export const getModelById = (modelId: string) => {
+  return availableModels.find(model => model.id === modelId);
+}
 
+// Create model instance from array configuration
+export function createModelFromConfig(modelId: string) {
+  const modelConfig = getModelById(modelId);
+  if (!modelConfig) {
+    throw new Error(`Model "${modelId}" not found in available models`);
+  } 
+  if (!modelConfig.apiKey) {
+    throw new Error('Model' + modelId + ' does not have a valid API key');
+  }
+
+
+  const commonConfig = {
+    model: modelConfig.id,
+    apiKey: modelConfig.apiKey,
+    temperature: 0.7,
+    provider: modelConfig.provider,
+  };
+  
+  if (modelConfig.provider === "dashscope") {
+    return new ChatOpenAI({
+      ...commonConfig,
+      configuration: {
+        baseURL: modelConfig.baseURL
+      }
+    });
+}
+
+// Main function to send message 
+export async function sendMessage(userInput: string, modelId: string) {
+  const model = createModelFromConfig(modelId);
+  const modelConfig = getModelById(modelId);
+
+
+  const aiMessage = await model?.invoke([
+    {
+      role: "system",
+      content: "You are a personal assistant. You are helpful, creative, clever, and very friendly.",
+    },
+    {
+      role: "user",
+      content: userInput
+    }
+  ])
+}
 
 
 
@@ -80,20 +128,20 @@ const model = new ChatOpenAI({
     }
   });
  
-export async function sendMessage(userInput: string) {
-  const aiMessage = await model.invoke(
-  [
-    {
-      role: "system",
-      content: "You are a personal assitant. You are helpful, creative, clever, and very friendly.",
-    },
-    {
-      role: "user",
-      content: userInput
-    }
-  ]); 
-  return aiMessage.content;
-}
+// export async function sendMessage(userInput: string) {
+//   const aiMessage = await model.invoke(
+//   [
+//     {
+//       role: "system",
+//       content: "You are a personal assitant. You are helpful, creative, clever, and very friendly.",
+//     },
+//     {
+//       role: "user",
+//       content: userInput
+//     }
+//   ]); 
+//   return aiMessage.content;
+// }
 
 
 
