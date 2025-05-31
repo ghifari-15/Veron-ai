@@ -682,16 +682,4 @@ function TypingDots() {
   )
 }
 
-const rippleKeyframes = `
-@keyframes ripple {
-  0% { transform: scale(0.5); opacity: 0.6; }
-  100% { transform: scale(2); opacity: 0; }
-}
-`
-
-if (typeof document !== "undefined") {
-  const style = document.createElement("style")
-  style.innerHTML = rippleKeyframes
-  document.head.appendChild(style)
-}
 }
