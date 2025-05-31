@@ -1,5 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { config } from "dotenv";
+import { get } from "http";
 
 config();
 const apiKey = process.env.DASHSCOPE_API_KEY;
@@ -85,25 +86,35 @@ export function createModelFromConfig(modelId: string) {
       }
     });
 }
+}
 
 // Main function to send message 
 export async function sendMessage(userInput: string, modelId: string) {
   const model = createModelFromConfig(modelId);
   const modelConfig = getModelById(modelId);
-
-
-  const aiMessage = await model?.invoke([
+  if(!model) {
+    throw new Error('Model' + model + ' is not available');
+  }
+  console.log('Using model: ', modelConfig?.name);
+  const aiMessage = await model.invoke([
     {
       role: "system",
-      content: "You are a personal assistant. You are helpful, creative, clever, and very friendly.",
+      content: "You are a professional personal assistance. Your name is Veron AI. You are here to help the user with their questions and tasks. Please respond in a friendly and helpful manner.",
     },
     {
       role: "user",
       content: userInput
     }
-  ])
+  ]);
+  return aiMessage;
 }
 
+export const getDefaultModel = () => {
+  const available = getAvailableModels();
+  return available.length > 0 ? available[0].id : null;
+}
+
+export default createModelFromConfig;
 
 
 
@@ -115,34 +126,7 @@ export async function sendMessage(userInput: string, modelId: string) {
 
 
 
-
-
-
-
-const model = new ChatOpenAI({
-    model: "qwen-turbo",
-    apiKey: apiKey,
-    temperature: 0.7,
-    configuration: {
-      baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
-    }
-  });
  
-// export async function sendMessage(userInput: string) {
-//   const aiMessage = await model.invoke(
-//   [
-//     {
-//       role: "system",
-//       content: "You are a personal assitant. You are helpful, creative, clever, and very friendly.",
-//     },
-//     {
-//       role: "user",
-//       content: userInput
-//     }
-//   ]); 
-//   return aiMessage.content;
-// }
-
 
 
 

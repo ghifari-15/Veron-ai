@@ -1,19 +1,31 @@
 import { GalleryVerticalEnd } from "lucide-react"
-
 import { LoginForm } from "@/components/ui/login/login-form"
+import { Avatar } from "radix-ui"
 
-export default function LoginPage() {
+export default function TestPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <a href="#" className="flex items-center gap-2 self-center font-medium">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
-          </div>
-          Acme Inc.
-        </a>
+    <main className="min-h-screen bg-transparent relative">
+      {/* Profile picture in top-right corner */}
+      <div className="absolute top-6 right-6 z-10">
+        <Avatar.Root className="inline-flex size-[45px] select-none items-center justify-center rounded-full bg-blackA3 align-middle">
+          <Avatar.Image
+            className="size-full rounded-[inherit] object-cover"
+            src="https://images.unsplash.com/photo-1492633423870-43d1cd2775eb?&w=128&h=128&dpr=2&q=80"
+            alt="Colm Tuite"
+          />
+          <Avatar.Fallback
+            className="leading-1 flex size-full items-center justify-center bg-white text-[15px] font-medium text-violet11"
+            delayMs={600}
+          >
+            CT
+          </Avatar.Fallback>
+        </Avatar.Root>
+      </div>
+
+      {/* Main content */}
+      <div className="flex items-center justify-center h-screen">
         <LoginForm />
       </div>
-    </div>
+    </main>
   )
 }

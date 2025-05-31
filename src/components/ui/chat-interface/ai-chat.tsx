@@ -3,10 +3,11 @@
 import { useEffect, useRef, useCallback, useTransition } from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Paperclip, Command, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, Figma, MonitorIcon, User, Bot } from "lucide-react"
+import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot } from "lucide-react"
 
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
+import AvatarDemo from "../avatar/avatar"
 
 // Add new interface for chat messages
 interface ChatMessage {
@@ -193,12 +194,7 @@ export function AIChat() {
       description: "Generate a UI from a screenshot",
       prefix: "/clone",
     },
-    {
-      icon: <Figma className="w-4 h-4" />,
-      label: "Import Figma",
-      description: "Import a design from Figma",
-      prefix: "/figma",
-    },
+ 
     {
       icon: <MonitorIcon className="w-4 h-4" />,
       label: "Create Page",
@@ -363,6 +359,9 @@ export function AIChat() {
           </h2>
         </div>
       </motion.div>
+      <div className="absolute top-6 right-8 z-10">
+        <AvatarDemo />
+      </div>
 
       {/* Background elements */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
