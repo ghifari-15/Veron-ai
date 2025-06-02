@@ -10,7 +10,7 @@ export function AiSelector() {
         <div className="relative">
           <Select
             className={clsx(
-              'mt-3 block w-full appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 text-sm/6 text-white',
+              'mt-3 block w-full appearance-none rounded-lg border-white bg-transparent px-3 py-1.5 text-sm/6 text-white',
               'focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25',
               // Make the text of each option black on Windows
               '*:text-black'
