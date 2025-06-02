@@ -4,7 +4,7 @@ import { sendMessage } from '../chatbot-library';
 
 
 
-sendMessage("10 + 10 berapa", "qwen-max")
+sendMessage("10 + 10 berapa", "qwen-max-latest")
     .then(response => {
         console.log("AI Response:", response.content);
     })
