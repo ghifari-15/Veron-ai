@@ -355,10 +355,12 @@ export function AIChat() {
       >
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">
-            <a href="ai-chat-tsx">VeronAI</a>
+            <a href="ai-chat.tsx">VeronAI</a>
           </h2>
         </div>
+       
       </motion.div>
+      <div className="flex justify-center pt-6 text-m font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">Select Models</div>
       <div className="absolute top-6 right-8 z-10">
         <AvatarDemo />
       </div>
