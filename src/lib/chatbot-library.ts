@@ -35,10 +35,11 @@ export const availableModels = [
     baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   },
   {
-    id: "gemini-2.0-flash-001",
-    name: "Gemini 2.0 Flash",
-    description: "Gemini 2.0 Flash delivers next-gen features and improved capabilities, including superior speed, native tool use, and a 1M token context window.",
-    apiKey: process.env.GOOGLE_API_KEY,
+   id: "gemini-1.5-pro",
+   name: "Gemini 1.4 Pro",
+   description: "Google's most capable multimodal model with 1M token context",
+   provider: "vertexai",
+   projectId: process.env.GOOG
   },
 
 ]
@@ -46,10 +47,24 @@ export const availableModels = [
 // Filter available models based on API keys
 export const getAvailableModels = () => {
   return availableModels.filter(model => {
-    if (!model.apiKey) {
-      console.error(`API key for model ${model.name} is not set.`); 
+    if (model.provider === "dashscope") {
+      if(!model.apiKey || model.apiKey === "") {
+        console.error(`Dashscope API key for model ${model.name} is not set.`); 
+        return false;
+      }
+    } else if(model.provider === "vertexai") {
+      if (!model.projectId) {
+        console.warn(`Google Cloud Project ID not found for ${model.name}`)
+        return false;
+      }
+      }
+      
+    }
+
+    // Check for credentials
+    
       return false;
-    } 
+    }
     return true;
   });
 }
