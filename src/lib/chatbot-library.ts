@@ -1,12 +1,11 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { config } from "dotenv";
-import { get } from "http";
+import { ChatVertexAI } from "@langchain/google-vertexai";
 
+// Load environment variables from .env file
 config();
-const apiKey = process.env.DASHSCOPE_API_KEY;
-if (!apiKey) {
-    throw new Error("DASHSCOPE_API_KEY is not set in the environment variables.");
-}
+
+
 
 export const availableModels = [
   {
@@ -39,35 +38,32 @@ export const availableModels = [
    name: "Gemini 1.4 Pro",
    description: "Google's most capable multimodal model with 1M token context",
    provider: "vertexai",
-   projectId: process.env.GOOG
+   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+   location: process.env.GOOGLE_CLOUD_LOCATION,
+   maxTokens: 1000000,
   },
 
 ]
 
-// Filter available models based on API keys
+// Filter available models based on API keys and credentials
 export const getAvailableModels = () => {
   return availableModels.filter(model => {
     if (model.provider === "dashscope") {
-      if(!model.apiKey || model.apiKey === "") {
-        console.error(`Dashscope API key for model ${model.name} is not set.`); 
+      if (!model.apiKey || model.apiKey === "") {
+        console.warn(`Dashscope API key for model ${model.name} is not set.`);
         return false;
       }
-    } else if(model.provider === "vertexai") {
+    } else if (model.provider === "google-genai") {
       if (!model.projectId) {
-        console.warn(`Google Cloud Project ID not found for ${model.name}`)
+        console.warn(`Google Cloud Project ID not found for ${model.name}`);
         return false;
       }
-      }
-      
-    }
-
-    // Check for credentials
-    
-      return false;
     }
     return true;
   });
-}
+};
+ 
+    
 
 
 // Get model by ID
@@ -81,40 +77,48 @@ export function createModelFromConfig(modelId: string) {
   if (!modelConfig) {
     throw new Error(`Model "${modelId}" not found in available models`);
   } 
-  if (!modelConfig.apiKey) {
+  if (modelConfig.provider === "dashscope") {
+    if (!modelConfig.apiKey) {
     throw new Error('Model' + modelId + ' does not have a valid API key');
   }
-
-
-  const commonConfig = {
+  return new ChatOpenAI({
     model: modelConfig.id,
     apiKey: modelConfig.apiKey,
     temperature: 0.7,
-    provider: modelConfig.provider,
-  };
-  
-  if (modelConfig.provider === "dashscope") {
-    return new ChatOpenAI({
-      ...commonConfig,
-      configuration: {
-        baseURL: modelConfig.baseURL
-      }
+    configuration: {
+      baseURL: modelConfig.baseURL
+    }
+  });
+  } else if (modelConfig.provider === "google-genai") {
+    if (!modelConfig.projectId) {
+      throw new Error(`Project ID not configured for ${modelConfig.name}`);
+    }
+    return new ChatVertexAI({
+      model: modelConfig.id,
+      apiKey: modelConfig.apiKey,
+      temperature: 0.7,
+      maxOutputTokens: Math.min(modelConfig.maxTokens || 8192, 8192), // Default to 8192 if not specified
+      location: modelConfig.location,
     });
+    
+  }
+  throw new Error(`Provider ${modelConfig.provider} not supported for model ${modelId}`);
 }
-}
+  
 
 // Main function to send message 
 export async function sendMessage(userInput: string, modelId: string) {
   const model = createModelFromConfig(modelId);
   const modelConfig = getModelById(modelId);
   if(!model) {
-    throw new Error('Model' + model + ' is not available');
+    throw new Error(`Model ${modelId} could not be initialized`);
   }
   console.log('Using model: ', modelConfig?.name);
+
   const aiMessage = await model.invoke([
     {
       role: "system",
-      content: "You are a professional personal assistance. Your name is Veron AI. You are here to help the user with their questions and tasks. Please respond in a friendly and helpful manner.",
+      content: "You are Veron AI, a professional personal assistant. You are helpful, creative, clever, and very friendly. Please respond in a friendly and helpful manner.",
     },
     {
       role: "user",
@@ -126,7 +130,12 @@ export async function sendMessage(userInput: string, modelId: string) {
 
 export const getDefaultModel = () => {
   const available = getAvailableModels();
-  return available.length > 0 ? available[0].id : null;
+  if (available.length === 0){
+    throw new Error("No available models found. Please check your API configuration.");
+    return null;
+  }
+  const dashscopeModel = available.find(model => model.provider === "dashscope");
+  return dashscopeModel ? dashscopeModel.id : available[0].id;
 }
 
 export default createModelFromConfig;

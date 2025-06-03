@@ -11,6 +11,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@langchain/google-vertexai": "^0.2.10",
     "@langchain/openai": "^0.5.11",
     "@radix-ui/colors": "^3.0.0",
     "@radix-ui/react-avatar": "^1.1.10",
