@@ -8,6 +8,7 @@ import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIco
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
 import AvatarDemo from "../avatar/avatar"
+import Sidebar from "./sidebar"
 
 // Add new interface for chat messages
 interface ChatMessage {
@@ -346,6 +347,7 @@ export function AIChat() {
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent text-white relative overflow-hidden">
+      <Sidebar />
       {/* Logo */}
       <motion.div 
         className="fixed top-6 left-6 z-20"
@@ -360,7 +362,7 @@ export function AIChat() {
         </div>
        
       </motion.div>
-      <div className="flex justify-center pt-6 text-m font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">Select Models</div>
+      <div className="flex justify-center -ml-500 pt-6 text-m font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">Select Models</div>
       <div className="absolute top-6 right-8 z-10">
         <AvatarDemo />
       </div>
