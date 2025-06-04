@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useTransition } from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot } from "lucide-react"
-
+import SplitText from "../../../../ReactBits/SplitText/SplitText"
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
 import AvatarDemo from "../avatar/avatar"
@@ -145,6 +145,7 @@ function TypingDots() {
     </div>
   )
 }
+
 
 export function AIChat() {
   const [value, setValue] = useState("")
@@ -348,21 +349,8 @@ export function AIChat() {
   return (
     <div className="min-h-screen flex flex-col bg-transparent text-white relative overflow-hidden">
       <Sidebar />
-      {/* Logo */}
-      <motion.div 
-        className="fixed top-6 left-6 z-20"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">
-            <a href="ai-chat.tsx">VeronAI</a>
-          </h2>
-        </div>
-       
-      </motion.div>
-      <div className="flex justify-center -ml-500 pt-6 text-m font-bold bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60">Select Models</div>
+      
+      <div className="flex pl-[550px] pt-6 text-m bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60 rounded">Select Models</div>
       <div className="absolute top-6 right-8 z-10">
         <AvatarDemo />
       </div>
@@ -551,7 +539,7 @@ export function AIChat() {
                 placeholder="Ask Veron a question..."
                 containerClassName="w-full"
                 className={cn(
-                  "w-full px-4 py-3",
+                  "w-full px-4 py-3 p",
                   "resize-none",
                   "bg-transparent",
                   "border-none",

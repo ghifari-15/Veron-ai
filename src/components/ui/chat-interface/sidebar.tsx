@@ -1,13 +1,11 @@
 import { motion } from "framer-motion"
-import { User, Bot, Sparkles, MonitorIcon, ArrowRightToLine, MessageCircle, Settings } from "lucide-react"
+import { User, Bot, Sparkles, MonitorIcon, ImageIcon, ArrowRightToLine, MessageCircle } from "lucide-react"
 import * as React from "react"
 import { Button } from "../button"
 
 const sidebarItems = [
-	{
-        icon: <Settings className="w-5 h-5" />,
-        label: "Settings",
-    },
+	
+    
 	{
 		icon: <Sparkles className="w-5 h-5" />,
 		label: "Prompts",
@@ -72,7 +70,7 @@ export default function Sidebar() {
 			<div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
 			{/* Chat History */}
 			<div className="flex-1 overflow-y-auto pr-1">
-				<div className="text-sm text-white/40 font-semibold px-2 mb-2 py-1.5">
+				<div className="text-sm text-white/40 font-semibold px-2 mb-2 pt-2">
 					Chat History
 				</div>
 				{Object.entries(grouped).map(([date, items]) => (
