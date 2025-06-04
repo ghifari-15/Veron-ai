@@ -42,6 +42,15 @@ export const availableModels = [
    location: process.env.GOOGLE_CLOUD_LOCATION,
    maxTokens: 1000000,
   },
+  {
+   id: "rakuten/rakutenai-7b-chat",
+   name: "Rakutenai 7b",
+   description: "Advanced state-of-the-art LLM with language understanding, superior reasoning, and text generation.",
+   provider: "nvidia",
+   apiKey: process.env.NVIDIA_API_KEY,
+   maxTokens: 1024,
+   baseURL: "https://integrate.api.nvidia.com/v1"
+  }
 
 ]
 
@@ -101,6 +110,21 @@ export function createModelFromConfig(modelId: string) {
       location: modelConfig.location,
     });
     
+  } else if (modelConfig.provider === "nvidia") {
+    if(!modelConfig.apiKey) {
+      throw new Error(`API key not configured for ${modelConfig.name}`);
+    }
+    return new ChatOpenAI({
+      model: modelConfig.id,
+      apiKey: modelConfig.apiKey,
+      temperature: 0.5,
+      topP: 1,
+      maxTokens: modelConfig.maxTokens,
+      streaming: false,
+      configuration: {
+        baseURL: modelConfig.baseURL,
+      }
+    })
   }
   throw new Error(`Provider ${modelConfig.provider} not supported for model ${modelId}`);
 }
@@ -125,7 +149,7 @@ export async function sendMessage(userInput: string, modelId: string) {
       content: userInput
     }
   ]);
-  return aiMessage;
+  return aiMessage.content;
 }
 
 export const getDefaultModel = () => {
