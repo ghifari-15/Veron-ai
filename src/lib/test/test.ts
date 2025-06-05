@@ -1,10 +1,8 @@
 
 import { sendMessage } from '../chatbot-library';
 
-
-
-
-sendMessage("Siapa namamu?", "rakuten/rakutenai-7b-chat")
+// Example usage of the sendMessage function
+sendMessage("Siapa namamu?", "microsoft/phi-4-reasoning-plus:free")
     .then(response => {
         console.log("AI Response:", response);
     })

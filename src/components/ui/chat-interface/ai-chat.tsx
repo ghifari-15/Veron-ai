@@ -4,7 +4,6 @@ import { useEffect, useRef, useCallback, useTransition } from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot } from "lucide-react"
-import SplitText from "../../../../ReactBits/SplitText/SplitText"
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
 import AvatarDemo from "../avatar/avatar"
@@ -350,7 +349,8 @@ export function AIChat() {
     <div className="min-h-screen flex flex-col bg-transparent text-white relative overflow-hidden">
       <Sidebar />
       
-      <div className="flex pl-[550px] pt-6 text-m bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/60 rounded">Select Models</div>
+    {/* Dropdown Select Model */}
+      <div className="flex pl-[550px] pt-6 text-m bg-clip-text text-transparent font-semibold bg-gradient-to-r from-white/90 to-white/60 rounded-full"></div>
       <div className="absolute top-6 right-8 z-10">
         <AvatarDemo />
       </div>

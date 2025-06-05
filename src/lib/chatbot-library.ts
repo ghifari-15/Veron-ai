@@ -9,71 +9,56 @@ config();
 
 export const availableModels = [
   {
-    id: "qwen-turbo",
-    name: "Qwen Turbo",
-    description: "Ultra-large, multilingual language model with a massively extended context length (1M tokens)",
-    provider: "dashscope",
-    apiKey: process.env.DASHSCOPE_API_KEY,
-    baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    id: "qwen/qwen3-8b:free",
+    name: "Qwen 3 8B",
+    description: "Qwen 3 8B is a large language model with 8 billion parameters, designed for advanced natural language understanding and generation tasks.",
+    provider: "aliyun",
+    source: "openrouter",
+    apiKey: process.env.OPEN_ROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1"
   },
   {
-    id: "qwen-max",
-    name: "Qwen Max",
-    description: "Ultra-large, multilingual language model with a massively extended context length (1M tokens)",
-    provider: "dashscope",
-    apiKey: process.env.DASHSCOPE_API_KEY,
-    baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-
+    id: "qwen/qwen3-14b:free",
+    name: "Qwen 3-14B",
+    description: "Qwen 3-14B is a large language model with 14 billion parameters, designed for advanced natural language understanding and generation tasks.",
+    provider: "aliyun",
+    source: "openrouter",
+    apiKey: process.env.OPEN_ROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1"
   },
   {
-    id: "qwen-max-latest",
-    name: "Qwen Max Latest",
-    description: "Ultra-large, multilingual language model with a massively extended context length (1M tokens)",
-    provider: "dashscope",
-    apiKey: process.env.DASHSCOPE_API_KEY,
-    baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    id: "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+    name: "Llama 3.1 Nemotron Ultra 253B",
+    description: "Llama 3.1 Nemotron Ultra 253B is a state-of-the-art language model with 253 billion parameters, designed for advanced natural language understanding and generation tasks.",
+    provider: "nvidia",
+    source: "openrouter",
+    apiKey: process.env.OPEN_ROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1"
   },
   {
-   id: "gemini-1.5-pro",
-   name: "Gemini 1.4 Pro",
-   description: "Google's most capable multimodal model with 1M token context",
-   provider: "vertexai",
-   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-   location: process.env.GOOGLE_CLOUD_LOCATION,
-   maxTokens: 1000000,
+    id: "microsoft/phi-4-reasoning-plus:free",
+    name: "Gemma 3N E4B IT",
+    description: "Gemma 3N E4B IT is a powerful language model designed for advanced natural language understanding and generation tasks, with a focus on IT-related queries.",
+    provider: "google",
+    source: "openrouter",
+    apiKey: process.env.OPEN_ROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1"
   },
-  {
-   id: "rakuten/rakutenai-7b-chat",
-   name: "Rakutenai 7b",
-   description: "Advanced state-of-the-art LLM with language understanding, superior reasoning, and text generation.",
-   provider: "nvidia",
-   apiKey: process.env.NVIDIA_API_KEY,
-   maxTokens: 1024,
-   baseURL: "https://integrate.api.nvidia.com/v1"
-  }
-
+  
 ]
 
 // Filter available models based on API keys and credentials
 export const getAvailableModels = () => {
   return availableModels.filter(model => {
-    if (model.provider === "dashscope") {
+    if (model.source === "openrouter") {
       if (!model.apiKey || model.apiKey === "") {
-        console.warn(`Dashscope API key for model ${model.name} is not set.`);
-        return false;
-      }
-    } else if (model.provider === "google-genai") {
-      if (!model.projectId) {
-        console.warn(`Google Cloud Project ID not found for ${model.name}`);
+        console.warn(`OpenRouter API key for model ${model.name} is not set.`);
         return false;
       }
     }
     return true;
   });
 };
- 
-    
-
 
 // Get model by ID
 export const getModelById = (modelId: string) => {
@@ -85,50 +70,23 @@ export function createModelFromConfig(modelId: string) {
   const modelConfig = getModelById(modelId);
   if (!modelConfig) {
     throw new Error(`Model "${modelId}" not found in available models`);
-  } 
-  if (modelConfig.provider === "dashscope") {
-    if (!modelConfig.apiKey) {
-    throw new Error('Model' + modelId + ' does not have a valid API key');
   }
-  return new ChatOpenAI({
-    model: modelConfig.id,
-    apiKey: modelConfig.apiKey,
-    temperature: 0.7,
-    configuration: {
-      baseURL: modelConfig.baseURL
-    }
-  });
-  } else if (modelConfig.provider === "google-genai") {
-    if (!modelConfig.projectId) {
-      throw new Error(`Project ID not configured for ${modelConfig.name}`);
-    }
-    return new ChatVertexAI({
-      model: modelConfig.id,
-      apiKey: modelConfig.apiKey,
-      temperature: 0.7,
-      maxOutputTokens: Math.min(modelConfig.maxTokens || 8192, 8192), // Default to 8192 if not specified
-      location: modelConfig.location,
-    });
-    
-  } else if (modelConfig.provider === "nvidia") {
-    if(!modelConfig.apiKey) {
-      throw new Error(`API key not configured for ${modelConfig.name}`);
+  // Support openrouter and nvidia (since both use OpenRouter API)
+  if (modelConfig.provider === "openrouter" || modelConfig.source === "openrouter" || modelConfig.provider === "nvidia") {
+    if (!modelConfig.apiKey) {
+      throw new Error('Model ' + modelId + ' does not have a valid API key');
     }
     return new ChatOpenAI({
       model: modelConfig.id,
       apiKey: modelConfig.apiKey,
-      temperature: 0.5,
-      topP: 1,
-      maxTokens: modelConfig.maxTokens,
-      streaming: false,
+      temperature: 0.7,
       configuration: {
         baseURL: modelConfig.baseURL,
       }
-    })
+    });
   }
   throw new Error(`Provider ${modelConfig.provider} not supported for model ${modelId}`);
 }
-  
 
 // Main function to send message 
 export async function sendMessage(userInput: string, modelId: string) {
@@ -156,10 +114,10 @@ export const getDefaultModel = () => {
   const available = getAvailableModels();
   if (available.length === 0){
     throw new Error("No available models found. Please check your API configuration.");
-    return null;
   }
-  const dashscopeModel = available.find(model => model.provider === "dashscope");
-  return dashscopeModel ? dashscopeModel.id : available[0].id;
+  // Prefer openrouter, fallback to first
+  const openrouterModel = available.find(model => model.provider === "openrouter" || model.source === "openrouter");
+  return openrouterModel ? openrouterModel.id : available[0].id;
 }
 
 export default createModelFromConfig;
@@ -174,7 +132,7 @@ export default createModelFromConfig;
 
 
 
- 
+
 
 
 
