@@ -3,11 +3,14 @@
 import { useEffect, useRef, useCallback, useTransition } from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot } from "lucide-react"
+import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot, Check, ChevronDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
 import AvatarDemo from "../avatar/avatar"
 import Sidebar from "./sidebar"
+import { availableModels, getModelById } from "@/lib/chatbot-library"
+import { Listbox } from "@headlessui/react"
+import Image from "next/image"
 
 // Add new interface for chat messages
 interface ChatMessage {
@@ -157,6 +160,8 @@ export function AIChat() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [showWelcome, setShowWelcome] = useState(true)
+  const [selectedModelId, setSelectedModelId] = useState(availableModels[0].id)
+  const [selectedModel, setSelectedModel] = useState(availableModels[0])
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 60,
     maxHeight: 200,
@@ -349,11 +354,65 @@ export function AIChat() {
     <div className="min-h-screen flex flex-col bg-transparent text-white relative overflow-hidden">
       <Sidebar />
       
-    {/* Dropdown Select Model */}
-      <div className="flex pl-[550px] pt-6 text-m bg-clip-text text-transparent font-semibold bg-gradient-to-r from-white/90 to-white/60 rounded-full"></div>
-      <div className="absolute top-6 right-8 z-10">
-        <AvatarDemo />
+   {/* Dropdown Select Model */}
+   <div className="absolute left-1/2 top-5 transform translate-x-8 z-28 py-2 z-30"> 
+   <Listbox value={selectedModel} onChange={setSelectedModel}>
+    <div className="relative w-80">
+      <Listbox.Button className="w-full bg-white/5 backdrop-blur-xl text-white px-4 py-3 rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-200 flex items-center justify-between group">
+      <div className="flex items-center gap-3">
+        {selectedModel.logo && (
+          <div className="relative">
+            <Image 
+              src={selectedModel.logo} 
+              alt={selectedModel.name} 
+              width={30} 
+              height={30} 
+              className="rounded-full ring-1 ring-white/20 bg-white"
+            />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/10" />
+          </div>
+        )}
+        <div className="text-left">
+          <div className="font-semibold text-white/90">{selectedModel.name}</div>
+          <div className="text-xs text-white/50 truncate max-w-[200px]">
+            {selectedModel.summary}
+          </div>
+        </div>
       </div>
+      <ChevronDown className="w-4 h-4 text-white/60 transition-transform duration-200 group-data-[headlessui-state~='open']:rotate-180" />
+    </Listbox.Button>
+    
+      <Listbox.Options className="absolute mt-2 w-full rounded-xl bg-[#18181b] shadow-lg border border-white/10 z-40">
+            {availableModels.map((model) => (
+              <Listbox.Option
+                key={model.id}
+                value={model}
+                className={({ active }) =>
+                  `cursor-pointer select-none px-4 py-2 flex items-center gap-3 rounded-xl text-sm  ${
+                    active ? "text-white/80" : "text-white/80"
+                  }`
+                }
+              >
+                {({ selected, active }) => (
+                  <>
+                    <Image src={model.logo} alt={model.name} width={28} height={28} className="rounded" />
+                    <div>
+                      <div className="font-medium">{model.name}</div>
+                      <div className={`text-xs mt-1 line-clamp-2 ${
+  active ? "text-white/80" : "text-white/50"
+}`}>
+  {model.summary}
+</div>
+                    </div>
+                    {selected && <Check className="w-4 h-4 text-violet-400 ml-auto" />}
+                  </>
+                )}
+              </Listbox.Option>
+            ))}
+          </Listbox.Options>
+    </div>
+   </Listbox>
+   </div>
 
       {/* Background elements */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -543,7 +602,7 @@ export function AIChat() {
                   "resize-none",
                   "bg-transparent",
                   "border-none",
-                  "text-white/90 text-sm",
+                  "text-white/90 text-base",
                   "focus:outline-none",
                   "placeholder:text-white/20",
                   "min-h-[60px]",
