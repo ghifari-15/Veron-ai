@@ -35,7 +35,7 @@ export default function Sidebar() {
 
 	return (
 		<motion.aside
-			className="fixed top-0 left-0 h-full w-64 flex flex-col py-6 px-3 z-30 backdrop-blur-2xl bg-white/[0.03]  border-r border-white/[0.07] shadow-xl"
+			className="fixed top-0 left-0 h-full w-64 flex flex-col py-6 px-3 z-30 backdrop-blur-2xl bg-transparent border-r border-white/[0.07] shadow-xl"
 			initial={{ x: -40, opacity: 0 }}
 			animate={{ x: 0, opacity: 1 }}
 			transition={{ duration: 0.5, ease: "easeOut" }}
