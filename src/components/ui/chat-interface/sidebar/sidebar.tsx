@@ -1,7 +1,7 @@
 import { motion } from "framer-motion"
-import { User, Bot, Sparkles, MonitorIcon, ImageIcon, ArrowRightToLine, MessageCircle } from "lucide-react"
+import { User, Bot, Sparkles, MonitorIcon, ArrowRightToLine, MessageCircle } from "lucide-react"
 import * as React from "react"
-import { Button } from "../button"
+import { Button } from "../../button"
 
 const sidebarItems = [
 	
@@ -59,7 +59,7 @@ export default function Sidebar() {
 				{sidebarItems.map((item) => (
 					<button
 						key={item.label}
-						className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium"
+						className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors text-m font-medium"
 					>
 						{item.icon}
 						<span>{item.label}</span>
@@ -81,7 +81,7 @@ export default function Sidebar() {
 						<ul className="flex flex-col gap-1">
 							{items.map((item) => (
 								<li key={item.id}>
-									<button className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-white/80 hover:bg-white/5 transition-colors text-xs">
+									<button className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-white/80 hover:bg-white/5 transition-colors text-sm">
 										{item.title}
                                         <ArrowRightToLine className="ml-auto w-4 h-4 opacity-50" />
 									</button>

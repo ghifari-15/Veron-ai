@@ -3,151 +3,33 @@
 import { useEffect, useRef, useCallback, useTransition } from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, MonitorIcon, User, Bot, Check, ChevronDown } from "lucide-react"
+import { Paperclip, SendIcon, XIcon, LoaderIcon, Sparkles, ImageIcon, User, Bot, Check, ChevronDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import * as React from "react"
-import AvatarDemo from "../avatar/avatar"
-import Sidebar from "./sidebar"
-import { availableModels, getModelById } from "@/lib/chatbot-library"
+import { ChatMessage, UseAutoResizeTextareaProps, CommandSuggestion, TextareaProps, ChatMessageType } from "../../../../types/chat-types"
+import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextArea"
+import Sidebar from "./sidebar/sidebar"
+import { availableModels, getModelById, sendMessage, getDefaultModel } from "@/lib/chatbot-library"
 import { Listbox } from "@headlessui/react"
+import { Textarea } from "../textarea/custom-textarea"
+import { TypingDots } from "./typing-dots"
+import { CommandPallete } from "./command-pallete"
 import Image from "next/image"
+import { WelcomeScreen } from "./welcome-screen"
+import { AttachmentList } from "./attachment-list"
+import { getGreeting } from "@/lib/constant/greetings"
+import { comma } from "postcss/lib/list"
 
-// Add new interface for chat messages
-interface ChatMessage {
-  id: string
-  content: string
-  isUser: boolean
-  timestamp: Date
-}
 
-interface UseAutoResizeTextareaProps {
-  minHeight: number
-  maxHeight?: number
-}
 
-function useAutoResizeTextarea({ minHeight, maxHeight }: UseAutoResizeTextareaProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const adjustHeight = useCallback(
-    (reset?: boolean) => {
-      const textarea = textareaRef.current
-      if (!textarea) return
 
-      if (reset) {
-        textarea.style.height = `${minHeight}px`
-        return
-      }
 
-      textarea.style.height = `${minHeight}px`
-      const newHeight = Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight ?? Number.POSITIVE_INFINITY))
 
-      textarea.style.height = `${newHeight}px`
-    },
-    [minHeight, maxHeight],
-  )
 
-  useEffect(() => {
-    const textarea = textareaRef.current
-    if (textarea) {
-      textarea.style.height = `${minHeight}px`
-    }
-  }, [minHeight])
 
-  useEffect(() => {
-    const handleResize = () => adjustHeight()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [adjustHeight])
-
-  return { textareaRef, adjustHeight }
-}
-
-interface CommandSuggestion {
-  icon: React.ReactNode
-  label: string
-  description: string
-  prefix: string
-}
-
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  containerClassName?: string
-  showRing?: boolean
-}
-
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, containerClassName, showRing = true, ...props }, ref) => {
-    const [isFocused, setIsFocused] = React.useState(false)
-
-    return (
-      <div className={cn("relative", containerClassName)}>
-        <textarea
-          className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "transition-all duration-200 ease-in-out",
-            "placeholder:text-muted-foreground",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            showRing ? "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0" : "",
-            className,
-          )}
-          ref={ref}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          {...props}
-        />
-
-        {showRing && isFocused && (
-          <motion.span
-            className="absolute inset-0 rounded-md pointer-events-none ring-2 ring-offset-0 ring-violet-500/30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
-
-        {props.onChange && (
-          <div
-            className="absolute bottom-2 right-2 opacity-0 w-2 h-2 bg-violet-500 rounded-full"
-            style={{
-              animation: "none",
-            }}
-            id="textarea-ripple"
-          />
-        )}
-      </div>
-    )
-  },
-)
-Textarea.displayName = "Textarea"
 
 // TypingDots component definition
-function TypingDots() {
-  return (
-    <div className="flex items-center ml-1">
-      {[1, 2, 3].map((dot) => (
-        <motion.div
-          key={dot}
-          className="w-1.5 h-1.5 bg-white/90 rounded-full mx-0.5"
-          initial={{ opacity: 0.3 }}
-          animate={{
-            opacity: [0.3, 0.9, 0.3],
-            scale: [0.85, 1.1, 0.85],
-          }}
-          transition={{
-            duration: 1.2,
-            repeat: Number.POSITIVE_INFINITY,
-            delay: dot * 0.15,
-            ease: "easeInOut",
-          }}
-          style={{
-            boxShadow: "0 0 4px rgba(255, 255, 255, 0.3)",
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 
 export function AIChat() {
   const [value, setValue] = useState("")
@@ -155,102 +37,180 @@ export function AIChat() {
   const [isTyping, setIsTyping] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [activeSuggestion, setActiveSuggestion] = useState<number>(-1)
-  const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [recentCommand, setRecentCommand] = useState<string | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<ChatMessageType[]>([])
   const [showWelcome, setShowWelcome] = useState(true)
-  const [selectedModelId, setSelectedModelId] = useState(availableModels[0].id)
-  const [selectedModel, setSelectedModel] = useState(availableModels[0])
+  const [selectedModelId, setSelectedModelId] = useState(() => {
+    try {
+      return getDefaultModel()
+    } catch {
+      return availableModels[0]?.id || ""
+    }
+  })
+  const [selectedModel, setSelectedModel] = useState(() => {
+    try {
+      const defaultModelId = getDefaultModel()
+      return getModelById(defaultModelId) || availableModels[0]
+    } catch {
+      return availableModels[0]
+    }
+  })
+  const [inputFocused, setInputFocused] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+
+
+  // Refs and hooks
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 60,
     maxHeight: 200,
   })
-  const [inputFocused, setInputFocused] = useState(false)
   const commandPaletteRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const getGreeting = () => {
-    const time = new Date().getHours();
-    if (time < 12) {
-        return "Good morning";
-    } else if (time < 18) {
-        return "Good afternoon";
-    } else {
-        return "Good evening";
-    }
-  }
 
-  // Dummy AI responses
-  const dummyResponses = [
-    "I'd be happy to help you with that! Could you provide more details about what you're looking for?",
-    "That's an interesting question. Based on what you've asked, here's what I think might be helpful...",
-    "I understand your request. Let me break this down for you step by step.",
-    "Great question! Here's my take on that topic, and I think you'll find this useful.",
-    "I can definitely assist with that. Here are some suggestions that might work for your situation.",
-    "That's a thoughtful inquiry. Let me provide you with a comprehensive response.",
-    "I see what you're getting at. Here's how I would approach this problem.",
-    "Excellent point! I have some ideas that could be exactly what you need."
-  ]
+  // Constants
+  const greeting = getGreeting()
 
+  // Command suggestions
   const commandSuggestions: CommandSuggestion[] = [
     {
-      icon: <ImageIcon className="w-4 h-4" />,
-      label: "Clone UI",
-      description: "Generate a UI from a screenshot",
-      prefix: "/clone",
-    },
- 
-    {
-      icon: <MonitorIcon className="w-4 h-4" />,
-      label: "Create Page",
-      description: "Generate a new web page",
-      prefix: "/page",
+      label: "Generate CRUD code",
+      description: "Generate CRUD code based from PHP",
+      prefix: "/crud",
+
     },
     {
-      icon: <Sparkles className="w-4 h-4" />,
-      label: "Improve",
-      description: "Improve existing UI design",
-      prefix: "/improve",
+      label: "Generate email draft",
+      description: "Generate email draft for a spesific purposes",
+      prefix: "/email", 
+    }
+    ,
+    {
+      label: "Generate HTML form",
+      description: "Generate a simple HTML form page",
+      prefix: "/html",
     },
+    {
+      label: "Generate React component",
+      description: "Generate a simple React component",
+      prefix: "/react",
+    },
+    {
+      label: "Generate Next.js page",
+      description: "Generate a simple Next.js page",
+      prefix: "/nextjs",
+    },
+    {
+      label: "Generate Node.js server",
+      description: "Generate a simple Node.js server",
+      prefix: "/nodejs",
+    }, 
   ]
 
-  const handleSendMessage = () => {
-    if (value.trim()) {
-      // Hide welcome screen when first message is sent
-      setShowWelcome(false)
-      
-      // Add user message
-      const userMessage: ChatMessage = {
-        id: Date.now().toString(),
-        content: value.trim(),
-        isUser: true,
-        timestamp: new Date()
-      }
-      
-      setMessages(prev => [...prev, userMessage])
-      setValue("")
-      adjustHeight(true)
-      
-      // Show typing indicator
-      setIsTyping(true)
-      
-      // Simulate AI response after delay
-      setTimeout(() => {
-        const aiResponse: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: dummyResponses[Math.floor(Math.random() * dummyResponses.length)],
-          isUser: false,
-          timestamp: new Date()
+  // Handler message sending 
+ // Handle sending message using chatbot-library
+  const handleSendMessage = async () => {
+    if (!value.trim()) return
+
+    const userMessage: ChatMessageType = {
+      id: Date.now().toString(),
+      content: value.trim(),
+      isUser: true,
+      timestamp: new Date()
+    }
+
+    // Add user message immediately
+    setMessages(prev => [...prev, userMessage])
+    setShowWelcome(false)
+    setIsTyping(true)
+    setError(null)
+
+    // Clear input
+    const currentValue = value
+    setValue("")
+    adjustHeight(true)
+
+    try {
+      // Start transition for better UX
+      startTransition(async () => {
+        try {
+          console.log('Sending message with model:', selectedModelId)
+          
+          // Send message using chatbot-library
+          const aiResponse = await sendMessage(currentValue, selectedModelId)
+
+          // Create AI response message
+          const aiMessage: ChatMessageType = {
+            id: (Date.now() + 1).toString(),
+            content: typeof aiResponse === 'string' ? aiResponse : aiResponse.toString(),
+            isUser: false,
+            timestamp: new Date()
+          }
+
+          // Add AI response
+          setMessages(prev => [...prev, aiMessage])
+
+        } catch (error) {
+          console.error('Error sending message:', error)
+          
+          // Add error message
+          const errorMessage: ChatMessageType = {
+            id: (Date.now() + 1).toString(),
+            content: "Sorry, I'm having trouble connecting right now. Please try again.",
+            isUser: false,
+            timestamp: new Date()
+          }
+
+          setMessages(prev => [...prev, errorMessage])
+          setError(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        } finally {
+          setIsTyping(false)
         }
-        
-        setMessages(prev => [...prev, aiResponse])
-        setIsTyping(false)
-      }, 1500 + Math.random() * 1000) // Random delay between 1.5-2.5s
+      })
+
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error)
+      setIsTyping(false)
+      setError("An unexpected error occurred.")
     }
   }
+  // Handle model change 
+  const handleModelChange = useCallback((model: any) => {
+    setSelectedModel(model)
+    setSelectedModelId(model.id)
+    console.log("Model change to: ", model.name)
+  }, [])
 
+  // Handle retry message 
+  const handleRetryMessage = useCallback(async (messageIndex: number) => {
+    const messageToRetry = messages[messageIndex - 1]
+    if (messageToRetry && messageToRetry.isUser) {
+      // Remove the failed response 
+      setMessages(prev => prev.slice(0, messageIndex))
+
+
+      // Set the input value and resend
+      setValue(messageToRetry.content)
+      setTimeout(() => handleSendMessage(), 100)
+    }
+  }, [messages])
+
+   // Handle command selection
+  const selectCommandSuggestion = (index: number) => {
+    const selectedCommand = commandSuggestions[index]
+    setValue(selectedCommand.prefix + " ")
+    setShowCommandPalette(false)
+    setRecentCommand(selectedCommand.label)
+    setTimeout(() => setRecentCommand(null), 2000)
+    textareaRef.current?.focus()
+  }
+
+
+  // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle command palette navigation
     if (showCommandPalette) {
       if (e.key === "ArrowDown") {
         e.preventDefault()
@@ -261,12 +221,7 @@ export function AIChat() {
       } else if (e.key === "Tab" || e.key === "Enter") {
         e.preventDefault()
         if (activeSuggestion >= 0) {
-          const selectedCommand = commandSuggestions[activeSuggestion]
-          setValue(selectedCommand.prefix + " ")
-          setShowCommandPalette(false)
-
-          setRecentCommand(selectedCommand.label)
-          setTimeout(() => setRecentCommand(null), 3500)
+          selectCommandSuggestion(activeSuggestion)
         }
       } else if (e.key === "Escape") {
         e.preventDefault()
@@ -274,31 +229,36 @@ export function AIChat() {
       }
     } else if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      if (value.trim()) {
+      if (value.trim() && !isTyping) {
         handleSendMessage()
       }
     }
   }
 
+  // Handle file attachment
   const handleAttachFile = () => {
-    const mockFileName = `file-${Math.floor(Math.random() * 1000)}.pdf`
-    setAttachments((prev) => [...prev, mockFileName])
+    const input = document.createElement("input")
+    input.type = "file"
+    input.multiple = true
+    input.accept = 'image/*, .pdf, .docx, .dox, .txt, .zip, .rar, .csv, .xlsx, .xls, .pptx, .ppt'
+
+
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if(files) {
+        const fileNames = Array.from(files).map(file => file.name)
+        setAttachments(prev => [...prev, ...fileNames])
+      }
+    }
+    input.click()
   }
 
+  // Remove attachment
   const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index))
+    setAttachments(prev => prev.filter((_, i) => i !== index))
   }
 
-  const selectCommandSuggestion = (index: number) => {
-    const selectedCommand = commandSuggestions[index]
-    setValue(selectedCommand.prefix + " ")
-    setShowCommandPalette(false)
-
-    setRecentCommand(selectedCommand.label)
-    setTimeout(() => setRecentCommand(null), 2000)
-  }
-
-  // Auto scroll to bottom when new messages arrive
+  // Effects
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
@@ -306,9 +266,7 @@ export function AIChat() {
   useEffect(() => {
     if (value.startsWith("/") && !value.includes(" ")) {
       setShowCommandPalette(true)
-
       const matchingSuggestionIndex = commandSuggestions.findIndex((cmd) => cmd.prefix.startsWith(value))
-
       if (matchingSuggestionIndex >= 0) {
         setActiveSuggestion(matchingSuggestionIndex)
       } else {
@@ -319,6 +277,7 @@ export function AIChat() {
     }
   }, [value, commandSuggestions])
 
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY })
@@ -328,18 +287,14 @@ export function AIChat() {
     return () => {
       window.removeEventListener("mousemove", handleMouseMove)
     }
-  }, [])
+  })
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
       const commandButton = document.querySelector("[data-command-button]")
 
-      if (
-        commandPaletteRef.current &&
-        !commandPaletteRef.current.contains(target) &&
-        !commandButton?.contains(target)
-      ) {
+      if (commandPaletteRef.current && !commandPaletteRef.current.contains(target) && !commandButton?.contains(target)) {
         setShowCommandPalette(false)
       }
     }
@@ -350,119 +305,106 @@ export function AIChat() {
     }
   }, [])
 
+
+  // Render component
   return (
     <div className="min-h-screen flex flex-col bg-transparent text-white relative overflow-hidden">
       <Sidebar />
-      
-   {/* Dropdown Select Model */}
-   <div className="absolute left-1/2 top-5 transform translate-x-8 z-28 py-2 z-30"> 
-   <Listbox value={selectedModel} onChange={setSelectedModel}>
-    <div className="relative w-80">
-      <Listbox.Button className="w-full bg-white/5 backdrop-blur-xl text-white px-4 py-3 rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-200 flex items-center justify-between group">
-      <div className="flex items-center gap-3">
-        {selectedModel.logo && (
-          <div className="relative">
-            <Image 
-              src={selectedModel.logo} 
-              alt={selectedModel.name} 
-              width={30} 
-              height={30} 
-              className="rounded-full ring-1 ring-white/20 bg-white"
-            />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/10" />
-          </div>
-        )}
-        <div className="text-left">
-          <div className="font-semibold text-white/90">{selectedModel.name}</div>
-          <div className="text-xs text-white/50 truncate max-w-[200px]">
-            {selectedModel.summary}
-          </div>
-        </div>
-      </div>
-      <ChevronDown className="w-4 h-4 text-white/60 transition-transform duration-200 group-data-[headlessui-state~='open']:rotate-180" />
-    </Listbox.Button>
-    
-      <Listbox.Options className="absolute mt-2 w-full rounded-xl bg-[#18181b] shadow-lg border border-white/10 z-40">
-            {availableModels.map((model) => (
-              <Listbox.Option
-                key={model.id}
-                value={model}
-                className={({ active }) =>
-                  `cursor-pointer select-none px-4 py-2 flex items-center gap-3 rounded-xl text-sm  ${
-                    active ? "text-white/80" : "text-white/80"
-                  }`
-                }
-              >
-                {({ selected, active }) => (
-                  <>
-                    <Image src={model.logo} alt={model.name} width={28} height={28} className="rounded" />
-                    <div>
-                      <div className="font-medium">{model.name}</div>
-                      <div className={`text-xs mt-1 line-clamp-2 ${
-  active ? "text-white/80" : "text-white/50"
-}`}>
-  {model.summary}
-</div>
-                    </div>
-                    {selected && <Check className="w-4 h-4 text-violet-400 ml-auto" />}
-                  </>
-                )}
-              </Listbox.Option>
-            ))}
-          </Listbox.Options>
-    </div>
-   </Listbox>
-   </div>
 
-      {/* Background elements */}
+      {/* Model Selector */}
+      <div className="fixed left-[450px] top-5 -translate-x-1/2 z-28 py-2 z-30">
+        <Listbox value={selectedModel} onChange={handleModelChange}>
+          <div className="relative w-80">
+            <Listbox.Button className="w-full bg-white/5 backdrop-blur-xl text-white px-4 py-3 rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-200 flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                {selectedModel?.logo && (
+                  <div className="relative">
+                    <Image 
+                      src={selectedModel.logo} 
+                      alt={selectedModel.name} 
+                      width={30} 
+                      height={30} 
+                      className="rounded-full ring-1 ring-white/20 bg-white"
+                    />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/10" />
+                  </div>
+                )}
+                <div className="text-left">
+                  <div className="font-semibold text-white/90">{selectedModel?.name}</div>
+                  <div className="text-xs text-white/50 truncate max-w-[200px]">
+                    {selectedModel?.summary}
+                  </div>
+                </div>
+              </div>
+              <ChevronDown className="w-4 h-4 text-white/60 transition-transform duration-200 group-data-[headlessui-state~='open']:rotate-180" />
+            </Listbox.Button>
+            
+            <Listbox.Options className="absolute mt-2 w-full rounded-xl bg-[#18181b] shadow-lg border border-white/10 z-40 max-h-80 overflow-y-auto">
+              {availableModels.map((model) => (
+                <Listbox.Option
+                  key={model.id}
+                  value={model}
+                  className={({ active }) =>
+                    `cursor-pointer select-none px-4 py-2 flex items-center gap-3 rounded-xl text-sm transition-colors ${
+                      active ? "bg-white/10 text-white/90" : "text-white/80 hover:bg-white/5"
+                    }`
+                  }
+                >
+                  {({ selected, active }) => (
+                    <>
+                      <Image src={model.logo} alt={model.name} width={28} height={28} className="rounded" />
+                      <div className="flex-1">
+                        <div className="font-medium">{model.name}</div>
+                        <div className={`text-xs mt-1 line-clamp-2 ${
+                          active ? "text-white/80" : "text-white/50"
+                        }`}>
+                          {model.summary}
+                        </div>
+                      </div>
+                      {selected && <Check className="w-4 h-4 text-violet-400 ml-auto" />}
+                    </>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+      </div>
+
+      {/* Background Effects */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
         <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-fuchsia-500/10 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" />
       </div>
 
-      {/* Main content */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10">
-        {/* Welcome screen */}
-        <AnimatePresence mode="wait">
-          {showWelcome && messages.length === 0 && (
-            <motion.div
-              className="flex-1 flex items-center justify-center p-6"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="text-center space-y-3">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="inline-block"
-                >
-                  <h1 className="text-4xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/40 pb-1">
-                    {getGreeting()}, How can I help today?
-                  </h1>
-                  <motion.div
-                    className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mt-5"
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: "100%", opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                  />
-                </motion.div>
-                <motion.p
-                  className="text-sm text-white/40"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Type a command or ask a question connected to your design needs.
-                </motion.p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <WelcomeScreen 
+          showWelcome={showWelcome} 
+          messagesLength={messages.length} 
+          getGreeting={() => greeting}
+        />
 
-        {/* Chat messages */}
+        {/* Error Display */}
+        {error && (
+          <motion.div
+            className="mx-6 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {error}
+            <button 
+              onClick={() => setError(null)}
+              className="ml-2 text-red-300 hover:text-red-100"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+
+        {/* Chat Messages */}
         <AnimatePresence>
           {messages.length > 0 && (
             <motion.div
@@ -474,22 +416,17 @@ export function AIChat() {
               {messages.map((message, index) => (
                 <motion.div
                   key={message.id}
-                  className={cn(
-                    "flex",
-                    message.isUser ? "justify-end" : "justify-start"
-                  )}
+                  className={cn("flex", message.isUser ? "justify-end" : "justify-start")}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-xl border shadow-lg",
-                      message.isUser
-                        ? "bg-white/10 border-white/20 text-white ml-4"
-                        : "bg-white/[0.02] border-white/[0.05] text-white/90 mr-4"
-                    )}
-                  >
+                  <div className={cn(
+                    "max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-xl border shadow-lg",
+                    message.isUser
+                      ? "bg-white/10 border-white/20 text-white ml-4"
+                      : "bg-white/[0.02] border-white/[0.05] text-white/90 mr-4"
+                  )}>
                     <div className="flex items-start gap-3">
                       {!message.isUser && (
                         <div className="w-6 h-6 border border-rounded border-white/[0.05] rounded-full bg-transparent from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
@@ -497,7 +434,7 @@ export function AIChat() {
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         <span className="text-xs text-white/40 mt-2 block">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -511,8 +448,8 @@ export function AIChat() {
                   </div>
                 </motion.div>
               ))}
-              
-              {/* Typing indicator */}
+
+              {/* Typing Indicator */}
               <AnimatePresence>
                 {isTyping && (
                   <motion.div
@@ -523,11 +460,11 @@ export function AIChat() {
                   >
                     <div className="max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-xl border bg-white/[0.02] border-white/[0.05] text-white/90 mr-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-transparent  border border-rounded border-white/[0.05]  from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-6 h-6 rounded-full bg-transparent border border-rounded border-white/[0.05] from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 mt-1">
                           <Bot className="w-3 h-3 text-white" />
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-white/70">Typing</span>
+                          <span className="text-sm text-white/70">Thinking</span>
                           <TypingDots />
                         </div>
                       </div>
@@ -535,53 +472,29 @@ export function AIChat() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              
+
               <div ref={messagesEndRef} />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Input area */}
-        <div className="p-6">
+        <div className="fixed w-[50%] py-[680px] ">
           <motion.div
             className="relative backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] shadow-2xl"
             initial={{ scale: 0.98 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
           >
-            {/* Command palette */}
-            <AnimatePresence>
-              {showCommandPalette && (
-                <motion.div
-                  ref={commandPaletteRef}
-                  className="absolute left-4 right-4 bottom-full mb-2 backdrop-blur-xl bg-black/90 rounded-lg z-50 shadow-lg border border-white/10 overflow-hidden"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <div className="py-1 bg-black/95">
-                    {commandSuggestions.map((suggestion, index) => (
-                      <motion.div
-                        key={suggestion.prefix}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer",
-                          activeSuggestion === index ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5",
-                        )}
-                        onClick={() => selectCommandSuggestion(index)}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.03 }}
-                      >
-                        <div className="w-5 h-5 flex items-center justify-center text-white/60">{suggestion.icon}</div>
-                        <div className="font-medium">{suggestion.label}</div>
-                        <div className="text-white/40 text-xs ml-1">{suggestion.prefix}</div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            
+            {/* Command Palette */}
+            <CommandPallete 
+              showCommandPalette={showCommandPalette}
+              commandSuggestions={commandSuggestions}
+              activeSuggestion={activeSuggestion}
+              onSelectCommand={selectCommandSuggestion}
+              commandPalleteRef={commandPaletteRef}
+            />
 
             {/* Textarea */}
             <div className="p-4">
@@ -595,10 +508,11 @@ export function AIChat() {
                 onKeyDown={handleKeyDown}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder="Ask Veron a question..."
+                placeholder="Ask Veron anything..."
+                disabled={isTyping}
                 containerClassName="w-full"
                 className={cn(
-                  "w-full px-4 py-3 p",
+                  "w-full px-4 py-3",
                   "resize-none",
                   "bg-transparent",
                   "border-none",
@@ -606,52 +520,28 @@ export function AIChat() {
                   "focus:outline-none",
                   "placeholder:text-white/20",
                   "min-h-[60px]",
+                  "disabled:opacity-50"
                 )}
-                style={{
-                  overflow: "hidden",
-                }}
+                style={{ overflow: "hidden" }}
                 showRing={false}
               />
             </div>
 
             {/* Attachments */}
-            <AnimatePresence>
-              {attachments.length > 0 && (
-                <motion.div
-                  className="px-4 pb-3 flex gap-2 flex-wrap"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  {attachments.map((file, index) => (
-                    <motion.div
-                      key={index}
-                      className="flex items-center gap-2 text-xs bg-white/[0.03] py-1.5 px-3 rounded-lg text-white/70"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <span>{file}</span>
-                      <button
-                        onClick={() => removeAttachment(index)}
-                        className="text-white/40 hover:text-white transition-colors"
-                      >
-                        <XIcon className="w-3 h-3" />
-                      </button>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <AttachmentList 
+              attachments={attachments}
+              onRemove={removeAttachment}
+            />
 
-            {/* Bottom controls */}
+            {/* Bottom Controls */}
             <div className="p-4 border-t border-white/[0.05] flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <motion.button
                   type="button"
                   onClick={handleAttachFile}
+                  disabled={isTyping}
                   whileTap={{ scale: 0.94 }}
-                  className="p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group"
+                  className="p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group disabled:opacity-50"
                 >
                   <Paperclip className="w-4 h-4" />
                   <motion.span
@@ -670,7 +560,9 @@ export function AIChat() {
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                   "flex items-center gap-2",
-                  value.trim() ? "bg-white text-[#0A0A0B] shadow-lg shadow-white/10" : "bg-white/[0.05] text-white/40",
+                  value.trim() && !isTyping 
+                    ? "bg-white text-[#0A0A0B] shadow-lg shadow-white/10 hover:bg-white/90" 
+                    : "bg-white/[0.05] text-white/40 cursor-not-allowed",
                 )}
               >
                 {isTyping ? (
@@ -678,14 +570,14 @@ export function AIChat() {
                 ) : (
                   <SendIcon className="w-4 h-4" />
                 )}
-                <span>Send</span>
+                <span>{isTyping ? "Thinking..." : "Send"}</span>
               </motion.button>
             </div>
           </motion.div>
         </div>
       </div>
 
-      {/* Mouse follow effect */}
+      {/* Mouse Follow Effect */}
       {inputFocused && (
         <motion.div
           className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.02] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 blur-[96px]"
@@ -703,34 +595,45 @@ export function AIChat() {
       )}
     </div>
   )
+
+}
+
+  
+
+
+  
+
+  
+  
+  
   
     
 
-function TypingDots() {
-  return (
-    <div className="flex items-center ml-1">
-      {[1, 2, 3].map((dot) => (
-        <motion.div
-          key={dot}
-          className="w-1.5 h-1.5 bg-white/90 rounded-full mx-0.5"
-          initial={{ opacity: 0.3 }}
-          animate={{
-            opacity: [0.3, 0.9, 0.3],
-            scale: [0.85, 1.1, 0.85],
-          }}
-          transition={{
-            duration: 1.2,
-            repeat: Number.POSITIVE_INFINITY,
-            delay: dot * 0.15,
-            ease: "easeInOut",
-          }}
-          style={{
-            boxShadow: "0 0 4px rgba(255, 255, 255, 0.3)",
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+// function TypingDots() {
+//   return (
+//     <div className="flex items-center ml-1">
+//       {[1, 2, 3].map((dot) => (
+//         <motion.div
+//           key={dot}
+//           className="w-1.5 h-1.5 bg-white/90 rounded-full mx-0.5"
+//           initial={{ opacity: 0.3 }}
+//           animate={{
+//             opacity: [0.3, 0.9, 0.3],
+//             scale: [0.85, 1.1, 0.85],
+//           }}
+//           transition={{
+//             duration: 1.2,
+//             repeat: Number.POSITIVE_INFINITY,
+//             delay: dot * 0.15,
+//             ease: "easeInOut",
+//           }}
+//           style={{
+//             boxShadow: "0 0 4px rgba(255, 255, 255, 0.3)",
+//           }}
+//         />
+//       ))}
+//     </div>
+//   )
+// }
 
-}
+

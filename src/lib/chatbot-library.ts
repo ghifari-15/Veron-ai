@@ -5,8 +5,6 @@ import { ChatVertexAI } from "@langchain/google-vertexai";
 // Load environment variables from .env file
 config();
 
-
-
 export const availableModels = [
   {
     id: "qwen/qwen3-8b:free",
