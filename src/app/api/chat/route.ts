@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMessage } from "@/lib/chatbot-library";
-import { error } from "console";
+import { error, timeStamp } from "console";
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,19 +13,25 @@ export async function POST(request: NextRequest) {
         }
         if (!modelId) {
             return NextResponse.json(
-                {error: "Model ID is required"},
+                { error: "Model ID is required" },
                 { status: 400 }
             );
         }
         console.log("API: Received request for model:", modelId);
+        // Log the first 100 characters of the message for debugging
         console.log("API: Message content:", message.substring(0, 100) + "...");
 
         // Call the sendMessage function with the provided message and modelId
-        const response = await sendMessage(message, modelId);
+        const response = await sendMessage(message.trim(), modelId);
 
 
-        return NextResponse.json(response);
-        
+        return NextResponse.json({
+            response,
+            modelId,
+            timeStamp: new Date().toISOString()
+        }
+        );
+
     } catch (err) {
         console.error("Error in chat API:", err);
         return NextResponse.json(

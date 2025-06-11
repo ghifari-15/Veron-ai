@@ -138,7 +138,7 @@ export function AIChat() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              messages: currentValue,
+              message: currentValue,
               modelId: selectedModelId
             }),
           });
