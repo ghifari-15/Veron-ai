@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { User, Bot, Sparkles, MonitorIcon, ArrowRightToLine, MessageCircle } from "lucide-react"
+import { Sparkles, MonitorIcon, ArrowRightToLine, MessageCircle } from "lucide-react"
 import * as React from "react"
 import { Button } from "../../button"
 

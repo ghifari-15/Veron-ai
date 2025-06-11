@@ -18,13 +18,6 @@ import Image from "next/image"
 import { WelcomeScreen } from "./welcome-screen"
 import { AttachmentList } from "./attachment-list"
 import { getGreeting } from "@/lib/constant/greetings"
-import { comma } from "postcss/lib/list"
-
-
-
-
-
-
 
 
 
@@ -116,7 +109,7 @@ export function AIChat() {
 
     const userMessage: ChatMessageType = {
       id: Date.now().toString(),
-      content: value.trim(),
+      content: value.trim().toString(),
       isUser: true,
       timestamp: new Date()
     }
@@ -139,7 +132,23 @@ export function AIChat() {
           console.log('Sending message with model:', selectedModelId)
           
           // Send message using chatbot-library
-          const aiResponse = await sendMessage(currentValue, selectedModelId)
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: currentValue,
+              modelId: selectedModelId
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send message');
+          }
+          // Parse AI response to JSOn
+          const { response: aiResponse } = await response.json();
 
           // Create AI response message
           const aiMessage: ChatMessageType = {
@@ -157,6 +166,7 @@ export function AIChat() {
           
           // Add error message
           const errorMessage: ChatMessageType = {
+            
             id: (Date.now() + 1).toString(),
             content: "Sorry, I'm having trouble connecting right now. Please try again.",
             isUser: false,
