@@ -1,4 +1,4 @@
-import { AIChat } from "@/components/ui/avatar/ai-chat"
+import { AIChat } from "@/components/ui/chat-interface/ai-chat"
 
 export default function Home() {
   return (
