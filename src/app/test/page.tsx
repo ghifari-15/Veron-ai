@@ -1,8 +1,5 @@
-import { GalleryVerticalEnd } from "lucide-react"
-import { LoginForm } from "@/components/ui/login/login-form"
-import { Avatar } from "radix-ui"
-import { AiSelector } from "@/components/ui/chat-interface/ai-selector"
 
+import { AIChat } from "@/components/ui/chat-interface/ai-chat"
 
 // export default function TestPage() {
 //   return (
@@ -34,6 +31,6 @@ import { AiSelector } from "@/components/ui/chat-interface/ai-selector"
 
 export default function TestPage() {
   return (
-    <AiSelector />
+    <AIChat />
   )
 }
