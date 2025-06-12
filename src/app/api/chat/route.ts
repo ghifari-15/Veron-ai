@@ -18,8 +18,9 @@ export async function POST(request: NextRequest) {
             );
         }
         console.log("API: Received request for model:", modelId);
-        // Log the first 100 characters of the message for debugging
         console.log("API: Message content:", message.substring(0, 100) + "...");
+        console.log("API: Environment check - GROQ_API_KEY:", !!process.env.GROQ_API_KEY);
+        console.log("API: Environment check - OPEN_ROUTER_API_KEY:", !!process.env.OPEN_ROUTER_API_KEY);
 
         // Call the sendMessage function with the provided message and modelId
         const response = await sendMessage(message.trim(), modelId);

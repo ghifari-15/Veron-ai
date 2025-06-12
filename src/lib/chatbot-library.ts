@@ -40,15 +40,15 @@ export const availableModels = [
     baseURL: "https://openrouter.ai/api/v1"
   },
   {
-    id: "microsoft/phi-4-reasoning-plus:free",
-    name: "Microsoft Phi 4 Reasoning Plus",
+    id: "qwen-qwq-32b",
+    name: "Faris QWQ",
     logo: "/microsoft.png",
     description: "Gemma 3N E4B IT is a powerful language model designed for advanced natural language understanding and generation tasks, with a focus on IT-related queries.",
     summary: "For advanced reasoning tasks",
     provider: "microsoft",
-    source: "openrouter",
-    apiKey: process.env.OPEN_ROUTER_API_KEY,
-    baseURL: "https://openrouter.ai/api/v1"
+    source: "groq",
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1"
   },
   
 ]
@@ -56,9 +56,9 @@ export const availableModels = [
 // Filter available models based on API keys and credentials
 export const getAvailableModels = () => {
   return availableModels.filter(model => {
-    if (model.source === "openrouter") {
+    if (model.source === "openrouter" || model.source === "groq") {
       if (!model.apiKey || model.apiKey === "") {
-        console.warn(`OpenRouter API key for model ${model.name} is not set.`);
+        console.warn(` API key for model ${model.name} is not set.`);
         return false;
       }
     }
@@ -77,8 +77,15 @@ export function createModelFromConfig(modelId: string) {
   if (!modelConfig) {
     throw new Error(`Model "${modelId}" not found in available models`);
   }
-  // Support openrouter and nvidia (since both use OpenRouter API)
-  if (modelConfig.provider === "openrouter" || modelConfig.source === "openrouter" || modelConfig.provider === "nvidia") {
+
+  console.log('Creating model config for:', modelConfig.name);
+  console.log('Source:', modelConfig.source);
+  console.log('API Key available:', !!modelConfig.apiKey);
+
+
+
+  // Support openrouter 
+  if (modelConfig.source === "openrouter" || modelConfig.source === "groq") {
     if (!modelConfig.apiKey) {
       throw new Error('Model ' + modelId + ' does not have a valid API key');
     }
@@ -96,6 +103,10 @@ export function createModelFromConfig(modelId: string) {
 
 // Main function to send message 
 export async function sendMessage(userInput: string, modelId: string) {
+  console.log('sendMessage called with model: ', modelId);
+  console.log('Environment OPEN_ROUTER_API_KEY:', !!process.env.OPEN_ROUTER_API_KEY)
+  console.log('Environment GROQ_API_KEY:', !!process.env.GROQ_API_KEY)
+
   const model = createModelFromConfig(modelId);
   const modelConfig = getModelById(modelId);
   if(!model) {
@@ -122,12 +133,16 @@ export const getDefaultModel = () => {
     throw new Error("No available models found. Please check your API configuration.");
   }
   // Prefer openrouter, fallback to first
-  const openrouterModel = available.find(model => model.provider === "openrouter" || model.source === "openrouter");
-  return openrouterModel ? openrouterModel.id : available[0].id;
+  const groqModel = available.find(model => model.source === "groq");
+  const openRouterModel = available.find(model => model.source === "openrouter");
+  
+  if (groqModel) return groqModel.id;
+  if (openRouterModel) return openRouterModel.id;
+  return available[0].id;
 }
 
-export default createModelFromConfig;
 
+export default createModelFromConfig;
 
 
 
